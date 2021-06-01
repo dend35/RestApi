@@ -1,18 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Core.Models.DB;
+using Core.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerGen.ConventionalRouting;
 
 namespace API
 {
@@ -23,18 +18,19 @@ namespace API
             Configuration = configuration;
         }
 
-        public IConfiguration Configuration { get; }
+        private IConfiguration Configuration { get; }
         
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
             services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo {Title = "API", Version = "v1"}); });
             
+            services.AddAutoMapper(typeof(Startup));
+            services.AddScoped<IUserService, UserService>();
             services.AddDbContext<Context>(options =>
                 options.UseLazyLoadingProxies()
-                    .EnableSensitiveDataLogging()//todo: для дебага
                     .UseNpgsql(Configuration.GetConnectionString("DB")), ServiceLifetime.Singleton);
-            Console.WriteLine(Configuration.GetConnectionString("DB"));
+            services.AddSwaggerGenWithConventionalRoutes();
         }
         
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -52,7 +48,11 @@ namespace API
 
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllerRoute("default", "{controller}/{action}/{id?}");
+                ConventionalRoutingSwaggerGen.UseRoutes(endpoints);
+            });
         }
     }
 }
