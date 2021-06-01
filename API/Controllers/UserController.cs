@@ -55,7 +55,7 @@ namespace API.Controllers
         }
         
         [HttpDelete]
-        public async Task<IActionResult> Update(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             var result = await _userService.Delete(id);
             if (result == null)
